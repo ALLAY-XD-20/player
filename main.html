@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Divine Music Bot Dashboard</title>
     
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Font Awesome -->
@@ -14,6 +14,10 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
 
+    <!-- External CSS File -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Tailwind Config -->
     <script>
         tailwind.config = {
             theme: {
@@ -33,34 +37,6 @@
             }
         }
     </script>
-
-    <style>
-        body { background-color: #0f0f16; color: white; overflow-x: hidden; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f0f16; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        
-        /* Slider Styling */
-        input[type=range] { -webkit-appearance: none; background: transparent; }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; height: 16px; width: 16px;
-            border-radius: 50%; background: #8b5cf6; cursor: pointer;
-            margin-top: -6px; box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 4px; cursor: pointer;
-            background: #4b5563; border-radius: 2px;
-        }
-        
-        .glass-panel {
-            background: rgba(26, 26, 36, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        
-        .fade-in { animation: fadeIn 0.5s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
 </head>
 <body class="flex flex-col min-h-screen">
 
@@ -197,191 +173,11 @@
         </div>
     </footer>
 
-    <!-- Scripts -->
+    <!-- YouTube API Script -->
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script>
-        const API_KEY = 'AIzaSyBGEdG7wJx6eaVP0cUuP6-zY43ae8viC6w';
-        let player;
-
-        // Initial Data to populate grid
-        const INITIAL_VIDEOS = [
-            { id: { videoId: 'jfKfPfyJRdk' }, snippet: { title: 'lofi hip hop radio - beats to relax/study to', channelTitle: 'Lofi Girl', thumbnails: { high: { url: 'https://img.youtube.com/vi/jfKfPfyJRdk/maxresdefault.jpg' } } } },
-            { id: { videoId: 'DWcJFNfaw9c' }, snippet: { title: 'Alice Deejay - Better Off Alone', channelTitle: 'Alice Deejay', thumbnails: { high: { url: 'https://img.youtube.com/vi/DWcJFNfaw9c/maxresdefault.jpg' } } } },
-            { id: { videoId: 'kJQP7kiw5Fk' }, snippet: { title: 'Luis Fonsi - Despacito', channelTitle: 'Luis Fonsi', thumbnails: { high: { url: 'https://img.youtube.com/vi/kJQP7kiw5Fk/maxresdefault.jpg' } } } },
-            { id: { videoId: '3tmd-ClpJxA' }, snippet: { title: 'Alan Walker - Faded', channelTitle: 'Alan Walker', thumbnails: { high: { url: 'https://img.youtube.com/vi/3tmd-ClpJxA/maxresdefault.jpg' } } } }
-        ];
-
-        // --- YouTube API Setup ---
-        function onYouTubeIframeAPIReady() {
-            player = new YT.Player('youtube-player', {
-                height: '100%',
-                width: '100%',
-                videoId: '',
-                host: 'https://www.youtube.com',
-                playerVars: {
-                    'playsinline': 1,
-                    'controls': 1,
-                    'rel': 0,
-                    'origin': window.location.origin, // Crucial for mobile
-                    'enablejsapi': 1
-                },
-                events: {
-                    'onStateChange': onPlayerStateChange,
-                    'onError': onPlayerError
-                }
-            });
-        }
-
-        function onPlayerStateChange(event) {
-            if (event.data == YT.PlayerState.PLAYING) {
-                // Enforce current speed setting
-                let speed = document.getElementById('speed-slider').value;
-                player.setPlaybackRate(parseFloat(speed));
-            }
-        }
-
-        function onPlayerError(event) {
-            console.log("Error:", event.data);
-            if([101, 150, 153].includes(event.data)) {
-                const url = player.getVideoUrl();
-                document.getElementById('fallback-link').href = url;
-                document.getElementById('error-overlay').style.display = 'flex';
-                document.getElementById('youtube-player').style.opacity = '0.1';
-            }
-        }
-
-        // --- Smart Input Logic (Combines your code + API) ---
-        async function handleSmartSearch() {
-            const input = document.getElementById('search-input').value.trim();
-            if (!input) return;
-
-            let videoId = "";
-
-            // 1. Check if it's a Direct Link (Your Code's Logic)
-            if (input.includes("youtube.com/watch?v=")) {
-                videoId = input.split("v=")[1].split("&")[0];
-            } else if (input.includes("youtu.be/")) {
-                videoId = input.split("youtu.be/")[1].split("?")[0];
-            }
-
-            // 2. Execution
-            if (videoId) {
-                // It's a Link -> Play Directly
-                playVideo(videoId, "Direct Link Video", "YouTube");
-            } else {
-                // It's a Keyword -> Search via API
-                await performSearch(input);
-            }
-        }
-
-        async function performSearch(query) {
-            document.getElementById('section-title').innerHTML = `<i class="fa-solid fa-search text-divine-primary"></i> Results for "${query}"`;
-            document.getElementById('video-grid').innerHTML = '<div class="col-span-full text-center py-10"><i class="fa-solid fa-circle-notch fa-spin text-4xl text-divine-primary"></i></div>';
-
-            try {
-                const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&q=${encodeURIComponent(query)}&type=video&key=${API_KEY}`;
-                const response = await fetch(url);
-                const data = await response.json();
-
-                if (data.error) {
-                    alert('API Limit or Error: ' + data.error.message);
-                    renderVideos([]);
-                    return;
-                }
-                renderVideos(data.items);
-                // Scroll down to results if searching
-                document.getElementById('content-container').scrollIntoView({ behavior: 'smooth' });
-
-            } catch (error) {
-                console.error(error);
-                alert('Search failed. Check console.');
-            }
-        }
-
-        function renderVideos(videos) {
-            const grid = document.getElementById('video-grid');
-            grid.innerHTML = '';
-            
-            if (!videos || videos.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center text-gray-500">No videos found.</div>';
-                return;
-            }
-
-            videos.forEach(video => {
-                const vidId = video.id.videoId;
-                const title = video.snippet.title;
-                const channel = video.snippet.channelTitle;
-                const thumb = video.snippet.thumbnails.high ? video.snippet.thumbnails.high.url : video.snippet.thumbnails.medium.url;
-
-                const card = document.createElement('div');
-                card.className = 'bg-divine-card rounded-xl overflow-hidden hover:bg-gray-800 transition cursor-pointer border border-white/5 shadow-lg group';
-                card.onclick = () => playVideo(vidId, title, channel);
-                
-                card.innerHTML = `
-                    <div class="relative aspect-video">
-                        <img src="${thumb}" class="w-full h-full object-cover group-hover:opacity-80 transition">
-                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                            <i class="fa-solid fa-play text-white text-3xl drop-shadow-lg"></i>
-                        </div>
-                    </div>
-                    <div class="p-3">
-                        <h4 class="font-bold text-white text-sm line-clamp-2">${title}</h4>
-                        <p class="text-xs text-gray-400 mt-1">${channel}</p>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        function playVideo(videoId, title, channel) {
-            const wrapper = document.getElementById('player-wrapper');
-            wrapper.classList.remove('hidden');
-            
-            document.getElementById('error-overlay').style.display = 'none';
-            document.getElementById('youtube-player').style.opacity = '1';
-            
-            document.getElementById('current-title').innerText = title;
-            document.getElementById('current-channel').innerText = channel;
-
-            if (player && player.loadVideoById) {
-                player.loadVideoById(videoId);
-            }
-            
-            wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-
-        function updateSpeed(val) {
-            document.getElementById('speed-val').innerText = val + 'x';
-            if (player) player.setPlaybackRate(parseFloat(val));
-        }
-
-        function changeAudioMode() {
-            const mode = document.getElementById('audio-track-select').value;
-            const slider = document.getElementById('speed-slider');
-            
-            let targetSpeed = 1.0;
-            if(mode === 'nightcore') targetSpeed = 1.25;
-            if(mode === 'slowed') targetSpeed = 0.75;
-            if(mode === 'fast') targetSpeed = 2.0;
-
-            slider.value = targetSpeed;
-            updateSpeed(targetSpeed);
-        }
-
-        function toggleFullscreen() {
-            const elem = document.getElementById('youtube-player');
-            if (elem.requestFullscreen) elem.requestFullscreen();
-        }
-
-        function toggleMobileMenu() { document.getElementById('mobile-menu').classList.toggle('hidden'); }
-        function closePlayer() {
-            document.getElementById('player-wrapper').classList.add('hidden');
-            if(player) player.stopVideo();
-        }
-        function handleEnter(e) { if(e.key === 'Enter') handleSmartSearch(); }
-        function resetApp() { closePlayer(); renderVideos(INITIAL_VIDEOS); document.getElementById('search-input').value = ''; }
-
-        window.onload = () => renderVideos(INITIAL_VIDEOS);
-    </script>
+    <!-- Your Custom Script -->
+    <script src="script.js"></script>
 </body>
 </html>
+
+
